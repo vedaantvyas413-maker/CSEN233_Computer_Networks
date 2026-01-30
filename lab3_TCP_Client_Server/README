@@ -1,11 +1,15 @@
-RUN.SH: shell script to run both programs and describe what is happening.
-
-prog1.c: Copy files (binary and text) using functions, compile, debug, run, and test
-
-prog2.c: Copy files (binary and text) using system calls, compile, debug, run, and test
-
-Both programs integrate third task, calculating time
-
-src1.dat, src2,datm=, 2 source files of different sizes.
-
 Used AI to help write shell script to run programs, did not copy code.
+
+client.c: TCP client that connects to the server, requests a file by name, and saves the received bytes.
+
+server_seq.c: Sequential TCP server that handles one client at a time, serving the requested file.
+
+server_thread.c: Concurrent TCP server that spawns a thread per client to serve requested files in parallel.
+
+test_seq.dat. File used to test the sequential (non-threaded) TCP server. The file is requested by the client and downloaded into a new file on the client side to verify that the client–server file transfer worked correctly and that the received file is not the same as the original. When run, a separate file staring with "received_" is created.
+
+test_thread_1.dat, test_thread_2.dat: Respectively, these files are used to test the concurrent (threaded) TCP server. Each file is requested by a different client at the same time, demonstrating that the server can handle multiple client connections concurrently, with both clients connected to the same server instance.
+
+screenshot1_2: Screenshot for steps 1 and 2, showing a simple test file for a sequential server and client. 
+
+screenshot3: Screenshot demonstrating the threaded server, showing the server, 2 clients, and 2 file downloads.

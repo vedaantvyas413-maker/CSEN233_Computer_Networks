@@ -4,29 +4,41 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <string.h>
 
- //Declare socket and connection file descriptors.
- int sockfd, connfd;
- socklen_t sin_size;
+//Declare socket descriptor.
+int sockfd;
 
-//Declare receiving and sending buffers of size 256 bytes
-char rbuf[256], sbuf[256];
+//Define the number of clients/threads that can be served
+#define N 100
+int threadCount = 0;
+pthread_t clients[N]; //declaring N threads
+
 //Declare server address to which to bind for receiving messages and client address to fill in sending address
 struct sockaddr_in servAddr, clienAddr;
 
+typedef struct {
+   int connfd;
+   struct sockaddr_in clienAddr;
+} client_args_t;
+
 //Connection handler for servicing client requests for file transfer
-void connectionHandler(void){
-   //declare buffer holding the name of the file from client
-   
+void *connectionHandler(void *arg){
+   client_args_t *client = (client_args_t *)arg;
+   int connfd = client->connfd;
+   struct sockaddr_in clienAddr = client->clienAddr;
+   char rbuf[256], sbuf[256];
+
    //Connection established, server begins to read and write to the connecting client
-   printf("Connection Established with client IP: %s and Port: %d. This is the sequential server, not threaded.\n", inet_ntoa(clienAddr.sin_addr), ntohs(clienAddr.sin_port));
+   printf("Connection Established with client IP: %s and Port: %d. This is the threaded server.\n", inet_ntoa(clienAddr.sin_addr), ntohs(clienAddr.sin_port));
    //receive name of the file from the client
    int rb = recv(connfd, rbuf, sizeof(rbuf), 0);
    if (rb <= 0) {
        perror("Failed to receive file name");
        close(connfd);
-       return;
+       free(client);
+       return NULL;
    }
    if (rb >= (int)sizeof(rbuf)) {
        rbuf[sizeof(rbuf) - 1] = '\0';
@@ -44,7 +56,8 @@ void connectionHandler(void){
    if (fp == NULL) {
        perror("File open error");
        close(connfd);
-       return;
+       free(client);
+       return NULL;
    }
 
    //read file and send to connection descriptor
@@ -57,7 +70,8 @@ void connectionHandler(void){
                perror("Failed to send file data");
                fclose(fp);
                close(connfd);
-               return;
+               free(client);
+               return NULL;
            }
            total_sent += sent;
        }
@@ -70,10 +84,9 @@ void connectionHandler(void){
 
    //Close connection descriptor
    close(connfd);
-
-   return;
+   free(client);
+   return NULL;
 }
-
 
 int main(int argc, char *argv[]){
  //Get from the command line, server IP, src and dst files.
@@ -101,17 +114,42 @@ int main(int argc, char *argv[]){
 
  // Server listening to the socket endpoint, and can queue 5 client requests
  listen(sockfd, 5);
- sin_size = sizeof(struct sockaddr_in);
+ socklen_t sin_size = sizeof(struct sockaddr_in);
  printf("Server waiting for client at port %d\n", atoi(argv[1]));
  
  while (1){
+    if (threadCount >= N){
+        perror("Too many connections");
+        break;
+    }
+
+   int connfd;
    sin_size = sizeof(clienAddr);
    if ((connfd = accept(sockfd, (struct sockaddr*)&clienAddr, &sin_size)) < 0) {
        perror("Failure to accept connection to the client");
-       exit(1);
+       continue;
    }
-   
-   connectionHandler();
+   client_args_t *client = (client_args_t *)malloc(sizeof(client_args_t));
+   if (client == NULL) {
+       perror("Failed to allocate client args");
+       close(connfd);
+       continue;
+   }
+    // pass correct connfd argument'
+    client->connfd = connfd;
+    client->clienAddr = clienAddr;
+
+    if(pthread_create(&clients[threadCount], NULL, connectionHandler, (void*) client) != 0){
+      perror("Unable to create a thread");
+      close(connfd);
+      free(client);
+      continue;
+   }
+   else 
+      printf("Thread %d has been created to service client request\n",++threadCount);
+ }
+ for(int i = 0; i < threadCount; i++){
+      pthread_join(clients[i], NULL);
  }
  return 0;
 }
