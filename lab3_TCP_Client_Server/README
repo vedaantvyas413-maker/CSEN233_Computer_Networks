@@ -1,4 +1,6 @@
-Used AI to help write shell script to run programs, did not copy code.
+Used AI to help with approach or errors, did not copy code.
+
+FILES: 
 
 client.c: TCP client that connects to the server, requests a file by name, and saves the received bytes.
 
