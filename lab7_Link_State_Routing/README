@@ -1,1 +1,13 @@
+Files:
 
+costs.txt – Randomly generated cost matrix used for the network topology. All values are ≤ 1000 since the program defines 1000 as infinity (no direct link between routers).
+
+machines.txt – Contains the configuration of the four routers (name, IP address, and port).
+
+ls_router.c – Main program implementing the Link-State routing simulation and Dijkstra’s shortest path algorithm.
+
+ss1.png – Screenshot of the first run showing all four routers running simultaneously with no link cost changes. The routers compute and display their initial least-cost distances.
+
+ss2.png – Screenshot of the second run where Router 1 changes the cost of the link to Router 3. The update is propagated to the other routers and the shortest paths are recomputed.
+
+Used AI to help with approach or errors, did not copy code.
